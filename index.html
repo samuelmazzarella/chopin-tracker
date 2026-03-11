@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Chopin Tracker">
+<title>Chopin Preludes Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'DM Sans', 'Segoe UI', sans-serif; background: #fafaf8; color: #1a1a1a; max-width: 600px; margin: 0 auto; padding: 0 12px 90px; min-height: 100vh; }
+.header { padding: 20px 0 10px; border-bottom: 2px solid #2F5496; margin-bottom: 14px; }
+.header h1 { font-size: 20px; font-weight: 700; color: #2F5496; letter-spacing: -0.3px; }
+.header-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+.date-line { font-size: 12px; color: #888; }
+.status-line { font-size: 10px; }
+.status-ok { color: #4CAF50; }
+.status-warn { color: #F9A825; }
+.export-banner { background: #FFF8E1; border: 1px solid #F9A825; border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; font-size: 11px; color: #8D6E00; display: flex; justify-content: space-between; align-items: center; }
+.export-banner button { background: #F9A825; color: #fff; border: none; border-radius: 4px; padding: 4px 10px; font-size: 11px; font-family: inherit; font-weight: 600; cursor: pointer; }
+.error-banner { background: #fce4ec; color: #c62828; padding: 6px 10px; border-radius: 6px; font-size: 11px; margin-bottom: 10px; }
+.nav { display: flex; gap: 0; margin-bottom: 14px; border-radius: 8px; overflow: hidden; border: 1px solid #ddd; }
+.nav button { flex: 1; padding: 10px 6px; border: none; cursor: pointer; font-size: 13px; font-family: inherit; transition: all 0.15s; }
+.nav button.active { background: #2F5496; color: #fff; font-weight: 700; }
+.nav button:not(.active) { background: #fff; color: #555; font-weight: 500; }
+.stats { display: flex; gap: 8px; margin-bottom: 14px; }
+.stat { flex: 1; background: #fff; border-radius: 8px; padding: 10px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.stat-num { font-size: 22px; font-weight: 700; color: #2F5496; }
+.stat-label { font-size: 10px; color: #888; margin-top: 2px; }
+.empty { text-align: center; padding: 40px 20px; color: #999; }
+.empty-icon { font-size: 36px; margin-bottom: 12px; }
+.card { background: #fff; border-radius: 8px; padding: 12px 14px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); cursor: pointer; transition: transform 0.1s; border-left: 4px solid #ccc; }
+.card-overdue { border-left-color: #e53935; }
+.card-due { border-left-color: #F9A825; }
+.card-ok { border-left-color: #4CAF50; }
+.card-hs { border-left-color: #F9A825; background: #fffdf5; }
+.card-notlearned { opacity: 0.5; }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-title { font-size: 15px; font-weight: 600; }
+.card-sub { font-size: 12px; color: #777; margin-top: 3px; }
+.card-meta { font-size: 11px; color: #888; margin-top: 3px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; color: #fff; white-space: nowrap; }
+.badge-red { background: #e53935; }
+.badge-amber { background: #F9A825; }
+.badge-green { background: #4CAF50; }
+.dots { display: inline-flex; gap: 2px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+.hs-tag { font-size: 9px; font-weight: 700; color: #BF8F00; background: #FFF8E1; padding: 1px 6px; border-radius: 4px; letter-spacing: 0.5px; }
+.expand-panel { padding: 14px; margin-top: -8px; margin-bottom: 8px; border-radius: 0 0 8px 8px; border: 1px solid; border-top: none; }
+.expand-prelude { background: #f7f9fc; border-color: #e8eef7; }
+.expand-hs { background: #fffdf0; border-color: #f0e8c0; }
+.expand-label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 8px; }
+.perf-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.perf-btn { padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; font-size: 12px; font-family: inherit; transition: all 0.1s; }
+.perf-btn:active { background: #e8eef7; border-color: #2F5496; }
+.action-btn { padding: 10px 20px; background: #2F5496; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; font-family: inherit; width: 100%; margin-top: 6px; }
+.action-btn-hs { background: #BF8F00; }
+.action-btn-grey { background: #999; font-size: 12px; margin-top: 20px; }
+.edit-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+.edit-label { font-size: 12px; color: #555; font-weight: 500; }
+.edit-input { border: 1px solid #ddd; border-radius: 4px; padding: 5px 8px; font-size: 13px; font-family: inherit; width: 70px; text-align: center; }
+.edit-input-wide { width: 180px; text-align: left; }
+.edit-input-date { width: 140px; }
+.edit-select { border: 1px solid #ddd; border-radius: 4px; padding: 5px 6px; font-size: 12px; font-family: inherit; background: #fff; }
+.sugg-val { font-size: 13px; color: #2F5496; font-weight: 600; }
+.sugg-cap { font-size: 10px; color: #999; font-weight: 400; }
+.hs-nested { margin-left: 18px; margin-bottom: 4px; }
+.hs-nested-card { background: #fffdf0; border-left: 3px solid #F9A825; border-radius: 6px; padding: 8px 12px; margin-bottom: 2px; cursor: pointer; font-size: 12px; }
+.hs-nested-card.placeholder { opacity: 0.5; }
+.info-section h3 { color: #2F5496; font-size: 16px; margin-bottom: 8px; margin-top: 16px; }
+.info-section h3:first-child { margin-top: 0; }
+.info-box { background: #fff; border-radius: 8px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); font-size: 13px; line-height: 1.7; }
+.info-box .note { font-size: 11px; color: #999; font-style: italic; margin-top: 8px; }
+.import-area { margin-top: 16px; }
+.import-area input[type=file] { font-size: 12px; font-family: inherit; }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Chopin Preludes Op. 28</h1>
+  <div class="header-row">
+    <div class="date-line" id="date-line"></div>
+    <div class="status-line" id="status-line"></div>
+  </div>
+</div>
+<div id="export-banner" class="export-banner hidden">
+  <span>You haven't backed up in a while. Tap Export to save a backup.</span>
+  <button onclick="exportData()">Export</button>
+</div>
+<div id="error-banner" class="error-banner hidden"></div>
+
+<div class="nav">
+  <button id="nav-today" class="active" onclick="switchView('today')">Today</button>
+  <button id="nav-tracker" onclick="switchView('tracker')">Full Tracker</button>
+  <button id="nav-info" onclick="switchView('info')">Info</button>
+</div>
+
+<div id="view-today"></div>
+<div id="view-tracker" class="hidden"></div>
+<div id="view-info" class="hidden"></div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const DIFF_CAPS = {1:14, 2:12, 3:10, 4:7, 5:5};
+const DIFF_COLORS = ['#4CAF50','#8BC34A','#FFC107','#FF9800','#f44336'];
+const PERF_OPTS = ['Secure','New / not solid','Some errors','Shaky','Automatic/slippery'];
+const HS_PERF_OPTS = ['Clean','Some slips','Rough','Skipped'];
+
+const DEFAULT_PRELUDES = [
+  {id:1,key:"C major",diff:3,dg:true,notes:"Not yet started (was in repertoire)",dfl:null,dlp:null,perf:"Not yet learned",int:null},
+  {id:2,key:"A minor",diff:1,dg:false,notes:"Not yet started",dfl:null,dlp:null,perf:"Not yet learned",int:null},
+  {id:3,key:"G major",diff:3,dg:true,notes:"Not yet started — learn after no.5",dfl:null,dlp:null,perf:"Not yet learned",int:null},
+  {id:4,key:"E minor",diff:1,dg:false,notes:"Not yet started",dfl:null,dlp:null,perf:"Not yet learned",int:null},
+  {id:5,key:"D major",diff:3,dg:true,notes:"Not yet started — learn after no.8",dfl:null,dlp:null,perf:"Not yet learned",int:null},
+  {id:6,key:"B minor",diff:1,dg:false,notes:"Not yet started",dfl:null,dlp:null,perf:"Not yet learned",int:null},
+  {id:7,key:"A major",diff:1,dg:false,notes:"Not yet started",dfl:null,dlp:null,perf:"Not yet learned",int:null},
+  {id:8,key:"F\u266f minor",diff:4,dg:false,notes:"Currently learning (~1/3 complete)",dfl:"2026-02-20",dlp:null,perf:"Not yet learned",int:null},
+  {id:9,key:"E major",diff:1,dg:false,notes:"Easy but needs conscious thought; subtle rhythm changes",dfl:"2026-02-20",dlp:"2026-03-09",perf:"New / not solid",int:2},
+  {id:10,key:"C\u266f minor",diff:3,dg:false,notes:"Solid (~18 months)",dfl:"2024-09-01",dlp:"2026-03-04",perf:"Secure",int:10},
+  {id:11,key:"B major",diff:2,dg:false,notes:"Solid (~18 months)",dfl:"2024-09-01",dlp:"2026-03-04",perf:"Secure",int:12},
+  {id:12,key:"G\u266f minor",diff:4,dg:true,notes:"Not yet started — learn after easy ones",dfl:null,dlp:null,perf:"Not yet learned",int:null},
+  {id:13,key:"F\u266f major",diff:2,dg:true,notes:"Not yet started",dfl:null,dlp:null,perf:"Not yet learned",int:null},
+  {id:14,key:"E\u266d minor",diff:3,dg:false,notes:"Short piece, medium difficulty",dfl:"2026-02-01",dlp:"2026-03-04",perf:"New / not solid",int:4},
+  {id:15,key:"D\u266d major",diff:2,dg:false,notes:"Known for years, extremely solid",dfl:"2020-01-01",dlp:"2026-03-06",perf:"Secure",int:12},
+  {id:16,key:"B\u266d minor",diff:5,dg:false,notes:"Error-prone throughout. Daily: 1 slow + 1 moderate + 1 fast + focused work.",dfl:"2025-12-01",dlp:"2026-03-09",perf:"Some errors",int:1},
+  {id:17,key:"A\u266d major",diff:2,dg:false,notes:"FLAG: feels too automatic. Needs active retrieval.",dfl:"2024-09-01",dlp:"2026-03-02",perf:"Automatic/slippery",int:7},
+  {id:18,key:"F minor",diff:4,dg:false,notes:"Solid — hot spots practiced daily",dfl:"2025-07-01",dlp:"2026-03-03",perf:"Secure",int:5},
+  {id:19,key:"E\u266d major",diff:5,dg:false,notes:"Try 3 focused sessions/week: slow, HS, random starts.",dfl:"2025-10-01",dlp:"2026-03-09",perf:"Some errors",int:2},
+  {id:20,key:"C minor",diff:1,dg:false,notes:"Very easy",dfl:"2025-03-01",dlp:"2026-03-04",perf:"Secure",int:10},
+  {id:21,key:"B\u266d major",diff:3,dg:false,notes:"Hot spot practiced daily",dfl:"2025-03-01",dlp:"2026-03-05",perf:"Secure",int:10},
+  {id:22,key:"G minor",diff:3,dg:false,notes:"Known for a decade, brought back ~12 months ago",dfl:"2025-03-01",dlp:"2026-03-05",perf:"Secure",int:10},
+  {id:23,key:"F major",diff:2,dg:false,notes:"Solid (~14 months)",dfl:"2025-01-01",dlp:"2026-03-05",perf:"Secure",int:12},
+  {id:24,key:"D minor",diff:5,dg:false,notes:"Very solid, learned first — hot spots practiced daily",dfl:"2024-03-01",dlp:"2026-02-27",perf:"Secure",int:5},
+];
+
+const DEFAULT_HOTSPOTS = [
+  {id:"hs-8-1",pid:8,desc:"(hot spots will emerge)",dlp:null,perf:"",int:null,ph:true},
+  {id:"hs-12-1",pid:12,desc:"(hot spots will emerge)",dlp:null,perf:"",int:null,ph:true},
+  {id:"hs-18-1",pid:18,desc:"Descending unison pattern",dlp:"2026-03-09",perf:"",int:1,ph:false},
+  {id:"hs-18-2",pid:18,desc:"Rapid chord leaps",dlp:"2026-03-09",perf:"",int:1,ph:false},
+  {id:"hs-21-1",pid:21,desc:"Lead-in to and descending legato chords",dlp:"2026-03-09",perf:"",int:1,ph:false},
+  {id:"hs-24-1",pid:24,desc:"F major scale",dlp:"2026-03-09",perf:"",int:1,ph:false},
+  {id:"hs-24-2",pid:24,desc:"C major scale",dlp:"2026-03-09",perf:"",int:1,ph:false},
+  {id:"hs-24-3",pid:24,desc:"E major scale",dlp:"2026-03-09",perf:"",int:1,ph:false},
+  {id:"hs-24-4",pid:24,desc:"B-dim arpeggio",dlp:"2026-03-09",perf:"",int:1,ph:false},
+  {id:"hs-24-5",pid:24,desc:"Chromatic thirds",dlp:"2026-03-09",perf:"",int:1,ph:false},
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let preludes, hotspots, expandedId = null, currentView = 'today';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem('chopin-tracker-v1');
+    if (raw) {
+      const d = JSON.parse(raw);
+      preludes = d.preludes || DEFAULT_PRELUDES;
+      hotspots = d.hotspots || DEFAULT_HOTSPOTS;
+      setStatus('saved');
+      return;
+    }
+  } catch(e) {}
+  preludes = JSON.parse(JSON.stringify(DEFAULT_PRELUDES));
+  hotspots = JSON.parse(JSON.stringify(DEFAULT_HOTSPOTS));
+  saveData();
+  setStatus('defaults');
+}
+
+function saveData() {
+  try {
+    const lastExport = localStorage.getItem('chopin-last-export');
+    localStorage.setItem('chopin-tracker-v1', JSON.stringify({preludes, hotspots, savedAt: new Date().toISOString()}));
+    setStatus('saved');
+    checkExportReminder();
+  } catch(e) {
+    document.getElementById('error-banner').textContent = 'Save failed: ' + e.message;
+    document.getElementById('error-banner').classList.remove('hidden');
+  }
+}
+
+function setStatus(type) {
+  const el = document.getElementById('status-line');
+  if (type === 'saved') {
+    el.innerHTML = '<span class="status-ok">✓ Data saved</span>';
+  } else {
+    el.innerHTML = '<span class="status-warn">⚠ Using defaults</span>';
+  }
+}
+
+function checkExportReminder() {
+  const lastExport = localStorage.getItem('chopin-last-export');
+  const banner = document.getElementById('export-banner');
+  if (!lastExport) { banner.classList.remove('hidden'); return; }
+  const daysSince = Math.floor((Date.now() - new Date(lastExport).getTime()) / 86400000);
+  if (daysSince > 14) banner.classList.remove('hidden');
+  else banner.classList.add('hidden');
+}
+
+// ============================================================
+// DATE UTILITIES (WEEKDAY-ONLY)
+// ============================================================
+function getToday() { return new Date().toISOString().split('T')[0]; }
+
+function isWeekday(d) { const day = d.getDay(); return day !== 0 && day !== 6; }
+
+function addWeekdays(dateStr, wd) {
+  const d = new Date(dateStr + 'T00:00:00');
+  let added = 0;
+  while (added < wd) { d.setDate(d.getDate()+1); if (isWeekday(d)) added++; }
+  return d.toISOString().split('T')[0];
+}
+
+function weekdaysBetween(fromStr, toStr) {
+  const from = new Date(fromStr+'T00:00:00'), to = new Date(toStr+'T00:00:00');
+  const sign = to >= from ? 1 : -1;
+  const start = sign === 1 ? from : to, end = sign === 1 ? to : from;
+  let count = 0; const c = new Date(start);
+  while (c < end) { c.setDate(c.getDate()+1); if (isWeekday(c)) count++; }
+  return count * sign;
+}
+
+function daysUntilDue(item) {
+  if (!item.dlp || !item.int) return null;
+  const nextDue = addWeekdays(item.dlp, item.int);
+  return weekdaysBetween(getToday(), nextDue);
+}
+
+function suggestedInterval(perf, cur, diff) {
+  if (!cur) return null;
+  const cap = DIFF_CAPS[diff] || 14;
+  if (perf === 'Secure') return Math.min(cap, Math.max(1, Math.round(cur * 1.25)));
+  if (perf === 'New / not solid' || perf === 'Some errors') return Math.min(cap, cur);
+  if (perf === 'Shaky' || perf === 'Automatic/slippery') return Math.max(1, Math.round(cur * 0.6));
+  return cur;
+}
+
+function monthsSince(dateStr) {
+  if (!dateStr) return null;
+  return Math.round((new Date() - new Date(dateStr+'T00:00:00')) / (30.44*86400000));
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  return new Date(dateStr+'T00:00:00').toLocaleDateString('en-GB', {day:'numeric',month:'short'});
+}
+
+function formatDateLong() {
+  return new Date().toLocaleDateString('en-GB', {weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+
+// ============================================================
+// DOTS
+// ============================================================
+function diffDots(diff) {
+  let h = '<span class="dots">';
+  for (let i=1;i<=5;i++) h += `<span class="dot" style="background:${i<=diff?DIFF_COLORS[diff-1]:'#e0e0e0'}"></span>`;
+  return h + '</span>';
+}
+
+// ============================================================
+// EXPORT / IMPORT
+// ============================================================
+function exportData() {
+  const data = JSON.stringify({preludes, hotspots, exportedAt: new Date().toISOString()}, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'chopin-tracker-backup-' + getToday() + '.json';
+  a.click(); URL.revokeObjectURL(url);
+  localStorage.setItem('chopin-last-export', new Date().toISOString());
+  checkExportReminder();
+}
+
+function importData(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const d = JSON.parse(e.target.result);
+      if (d.preludes && d.hotspots) {
+        preludes = d.preludes;
+        hotspots = d.hotspots;
+        saveData();
+        render();
+        alert('Data restored successfully!');
+      } else { alert('Invalid backup file.'); }
+    } catch(err) { alert('Error reading file: ' + err.message); }
+  };
+  reader.readAsText(file);
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function markPrelude(id, perf) {
+  const p = preludes.find(x => x.id === id);
+  if (!p) return;
+  if (perf) p.perf = perf;
+  p.dlp = getToday();
+  p.int = suggestedInterval(p.perf, p.int, p.diff) || p.int;
+  expandedId = null;
+  saveData(); render();
+}
+
+function markHotspot(hsId, perf) {
+  const h = hotspots.find(x => x.id === hsId);
+  if (!h) return;
+  if (perf) h.perf = perf;
+  h.dlp = getToday();
+  expandedId = null;
+  saveData(); render();
+}
+
+function updatePrelude(id, field, value) {
+  const p = preludes.find(x => x.id === id);
+  if (!p) return;
+  if (field === 'int' || field === 'diff') value = parseInt(value) || null;
+  p[field] = value || null;
+  saveData(); render();
+}
+
+function updateHotspot(hsId, field, value) {
+  const h = hotspots.find(x => x.id === hsId);
+  if (!h) return;
+  h[field] = value || null;
+  saveData(); render();
+}
+
+function resetAll() {
+  if (confirm('Reset all data to defaults? This cannot be undone.')) {
+    preludes = JSON.parse(JSON.stringify(DEFAULT_PRELUDES));
+    hotspots = JSON.parse(JSON.stringify(DEFAULT_HOTSPOTS));
+    saveData(); render();
+  }
+}
+
+function toggleExpand(itemId) {
+  expandedId = expandedId === itemId ? null : itemId;
+  render();
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function switchView(v) {
+  currentView = v; expandedId = null;
+  document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('nav-'+v).classList.add('active');
+  document.getElementById('view-today').classList.toggle('hidden', v !== 'today');
+  document.getElementById('view-tracker').classList.toggle('hidden', v !== 'tracker');
+  document.getElementById('view-info').classList.toggle('hidden', v !== 'info');
+  render();
+}
+
+function render() {
+  document.getElementById('date-line').textContent = formatDateLong();
+  if (currentView === 'today') renderToday();
+  else if (currentView === 'tracker') renderTracker();
+  else renderInfo();
+}
+
+function cardClass(d, isHs) {
+  if (isHs) return 'card card-hs';
+  if (d === null) return 'card';
+  if (d < 0) return 'card card-overdue';
+  if (d === 0) return 'card card-due';
+  return 'card card-ok';
+}
+
+function badgeHtml(d) {
+  if (d === null) return '';
+  if (d < 0) return `<span class="badge badge-red">${-d}d overdue</span>`;
+  if (d === 0) return `<span class="badge badge-amber">due today</span>`;
+  return `<span class="badge badge-green">${d}d</span>`;
+}
+
+function perfBtns(opts, onclick) {
+  return '<div class="perf-btns">' + opts.map(o => `<button class="perf-btn" onclick="${onclick}('${o.replace(/'/g,"\\'")}')">${o}</button>`).join('') + '</div>';
+}
+
+// ============================================================
+// TODAY VIEW
+// ============================================================
+function renderToday() {
+  const today = getToday();
+  const items = [];
+
+  preludes.forEach(p => {
+    if (p.perf === 'Not yet learned') return;
+    const d = daysUntilDue(p);
+    if (d !== null && d <= 0) items.push({type:'prelude', data:p, d});
+  });
+  hotspots.forEach(h => {
+    if (h.ph || !h.dlp) return;
+    const d = daysUntilDue(h);
+    if (d !== null && d <= 0) items.push({type:'hotspot', data:h, d, parent: preludes.find(p=>p.id===h.pid)});
+  });
+  items.sort((a,b) => a.d - b.d);
+
+  // Update nav count
+  document.getElementById('nav-today').textContent = 'Today' + (items.length > 0 ? ` (${items.length})` : '');
+
+  const learned = preludes.filter(p => p.perf !== 'Not yet learned').length;
+  const duePreludes = items.filter(i => i.type === 'prelude').length;
+  const dueHs = items.filter(i => i.type === 'hotspot').length;
+
+  let html = `<div class="stats">
+    <div class="stat"><div class="stat-num">${duePreludes}</div><div class="stat-label">PRELUDES DUE</div></div>
+    <div class="stat"><div class="stat-num">${dueHs}</div><div class="stat-label">HOT SPOTS DUE</div></div>
+    <div class="stat"><div class="stat-num">${learned}/24</div><div class="stat-label">LEARNED</div></div>
+  </div>`;
+
+  if (items.length === 0) {
+    html += '<div class="empty"><div class="empty-icon">✓</div><div style="font-size:16px;font-weight:600">All caught up!</div><div style="font-size:13px;margin-top:4px">No pieces or hot spots due today. Use this time for new learning or deep practice.</div></div>';
+  } else {
+    items.forEach(item => {
+      const isExp = expandedId === (item.type==='prelude' ? 'p-'+item.data.id : item.data.id);
+      const isOver = item.d < 0;
+
+      if (item.type === 'prelude') {
+        const p = item.data;
+        html += `<div class="${isOver?'card card-overdue':'card card-due'}" onclick="toggleExpand('p-${p.id}')">
+          <div class="card-header">
+            <div>
+              <div class="card-title">No.${p.id} — ${p.key}</div>
+              <div class="card-meta">${diffDots(p.diff)} <span>${p.perf}</span> ${p.int?`<span>every ${p.int}d</span>`:''}</div>
+            </div>
+            ${badgeHtml(item.d)}
+          </div>
+          ${p.notes ? `<div class="card-sub">${p.notes}</div>` : ''}
+        </div>`;
+        if (isExp) {
+          html += `<div class="expand-panel expand-prelude">
+            <div class="expand-label">How did it go?</div>
+            ${perfBtns(PERF_OPTS, `markPreludePerf_${p.id}`)}
+            <button class="action-btn" onclick="markPrelude(${p.id},null)">Mark practiced (keep current rating)</button>
+          </div>`;
+        }
+      } else {
+        const h = item.data;
+        html += `<div class="${isOver?'card card-overdue card-hs':'card card-due card-hs'}" onclick="toggleExpand('${h.id}')">
+          <div class="card-header">
+            <div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span class="hs-tag">HOT SPOT</span>
+                <span class="card-title" style="font-size:13px">No.${h.pid} — ${h.desc}</span>
+              </div>
+              ${item.parent ? `<div style="font-size:11px;color:#999;margin-top:2px">${item.parent.key}</div>` : ''}
+            </div>
+            ${badgeHtml(item.d)}
+          </div>
+        </div>`;
+        if (isExp) {
+          html += `<div class="expand-panel expand-hs">
+            <div class="expand-label">How did it go?</div>
+            ${perfBtns(HS_PERF_OPTS, `markHsPerf_${h.id}`)}
+            <button class="action-btn action-btn-hs" onclick="markHotspot('${h.id}','')">Mark practiced</button>
+          </div>`;
+        }
+      }
+    });
+  }
+
+  document.getElementById('view-today').innerHTML = html;
+
+  // Wire up dynamic perf button handlers
+  items.forEach(item => {
+    if (item.type === 'prelude') {
+      const p = item.data;
+      window[`markPreludePerf_${p.id}`] = (perf) => markPrelude(p.id, perf);
+    } else {
+      const h = item.data;
+      window[`markHsPerf_${h.id}`] = (perf) => markHotspot(h.id, perf);
+    }
+  });
+}
+
+// ============================================================
+// FULL TRACKER VIEW
+// ============================================================
+function renderTracker() {
+  let html = '';
+  preludes.forEach(p => {
+    const d = daysUntilDue(p);
+    const months = monthsSince(p.dfl);
+    const notLearned = p.perf === 'Not yet learned';
+    const isExp = expandedId === 'edit-p-'+p.id;
+    const sugg = p.int ? suggestedInterval(p.perf, p.int, p.diff) : null;
+    const cls = notLearned ? 'card card-notlearned' : cardClass(d, false);
+
+    html += `<div class="${cls}" onclick="toggleExpand('edit-p-${p.id}')">
+      <div class="card-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="card-title">No.${p.id} — ${p.key}</span>
+            ${diffDots(p.diff)}
+            ${p.dg ? '<span style="font-size:9px;color:#bbb;font-style:italic">est.</span>' : ''}
+          </div>
+          <div style="font-size:11px;color:#888;margin-top:2px">
+            ${notLearned ? 'Not yet learned' : `${p.perf} · ${p.int}d interval${months!==null?' · '+months+' months':''}${p.dlp?' · last: '+formatDate(p.dlp):''}`}
+          </div>
+        </div>
+        ${(!notLearned && d !== null) ? badgeHtml(d) : ''}
+      </div>
+      ${p.notes ? `<div class="card-sub">${p.notes}</div>` : ''}
+    </div>`;
+
+    if (isExp) {
+      html += `<div class="expand-panel expand-prelude">
+        <div class="edit-row"><span class="edit-label">Performance</span>
+          <select class="edit-select" onchange="updatePrelude(${p.id},'perf',this.value)">
+            <option value="Not yet learned" ${p.perf==='Not yet learned'?'selected':''}>Not yet learned</option>
+            ${PERF_OPTS.map(o=>`<option value="${o}" ${p.perf===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+        <div class="edit-row"><span class="edit-label">Interval (days)</span>
+          <input type="number" class="edit-input" value="${p.int||''}" min="1" onchange="updatePrelude(${p.id},'int',this.value)">
+        </div>
+        ${sugg?`<div class="edit-row"><span class="edit-label">Suggested interval</span><span class="sugg-val">${sugg}d <span class="sugg-cap">(cap: ${DIFF_CAPS[p.diff]}d)</span></span></div>`:''}
+        <div class="edit-row"><span class="edit-label">Difficulty (1-5)</span>
+          <input type="number" class="edit-input" value="${p.diff}" min="1" max="5" onchange="updatePrelude(${p.id},'diff',this.value)">
+        </div>
+        <div class="edit-row"><span class="edit-label">Date first learned</span>
+          <input type="date" class="edit-input edit-input-date" value="${p.dfl||''}" onchange="updatePrelude(${p.id},'dfl',this.value)">
+        </div>
+        <div class="edit-row"><span class="edit-label">Date last played</span>
+          <input type="date" class="edit-input edit-input-date" value="${p.dlp||''}" onchange="updatePrelude(${p.id},'dlp',this.value)">
+        </div>
+        <div class="edit-row"><span class="edit-label">Notes</span>
+          <input type="text" class="edit-input edit-input-wide" value="${(p.notes||'').replace(/"/g,'&quot;')}" onchange="updatePrelude(${p.id},'notes',this.value)">
+        </div>
+      </div>`;
+    }
+
+    // Nested hotspots
+    const pHs = hotspots.filter(h => h.pid === p.id);
+    pHs.forEach(h => {
+      const hd = daysUntilDue(h);
+      const isHsExp = expandedId === 'edit-hs-'+h.id;
+      html += `<div class="hs-nested">
+        <div class="hs-nested-card ${h.ph?'placeholder':''}" onclick="event.stopPropagation();toggleExpand('edit-hs-${h.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="hs-tag">HOT SPOT</span>
+              <span style="font-weight:500">${h.desc}</span>
+            </div>
+            ${(!h.ph && hd !== null) ? badgeHtml(hd) : ''}
+          </div>
+          ${(!h.ph && h.dlp) ? `<div style="font-size:10px;color:#999;margin-top:2px">last: ${formatDate(h.dlp)} · daily${h.perf?' · '+h.perf:''}</div>` : ''}
+        </div>`;
+      if (isHsExp && !h.ph) {
+        html += `<div class="expand-panel expand-hs" style="margin-left:0;margin-top:-2px">
+          <div class="edit-row"><span class="edit-label">Description</span>
+            <input type="text" class="edit-input edit-input-wide" value="${h.desc.replace(/"/g,'&quot;')}" onchange="updateHotspot('${h.id}','desc',this.value)">
+          </div>
+          <div class="edit-row"><span class="edit-label">Date last played</span>
+            <input type="date" class="edit-input edit-input-date" value="${h.dlp||''}" onchange="updateHotspot('${h.id}','dlp',this.value)">
+          </div>
+        </div>`;
+      }
+      html += '</div>';
+    });
+  });
+
+  document.getElementById('view-tracker').innerHTML = html;
+}
+
+// ============================================================
+// INFO VIEW
+// ============================================================
+function renderInfo() {
+  document.getElementById('view-info').innerHTML = `<div class="info-section">
+    <h3>Spaced Repetition Rules</h3>
+    <div class="info-box">
+      <div><strong>Secure</strong> → interval × 1.25 (capped by difficulty)</div>
+      <div><strong>New / not solid</strong> → keep interval</div>
+      <div><strong>Some errors</strong> → keep interval</div>
+      <div><strong>Shaky</strong> → interval × 0.6</div>
+      <div><strong>Automatic/slippery</strong> → interval × 0.6 + active retrieval</div>
+    </div>
+
+    <h3>Difficulty Caps</h3>
+    <div class="info-box">
+      ${[1,2,3,4,5].map(d => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">${diffDots(d)} Difficulty ${d}: max <strong>${DIFF_CAPS[d]} days</strong></div>`).join('')}
+      <div class="note">Based on spaced repetition research, adapted conservatively for piano repertoire. 14-day maximum is a conservative ceiling.</div>
+    </div>
+
+    <h3>Weekday-Only Counting</h3>
+    <div class="info-box">Intervals count weekdays only (Mon–Fri). A piece with a 1-day interval played on Friday is due Monday. Nothing shows as overdue over the weekend.</div>
+
+    <h3>Practice Techniques</h3>
+    <div class="info-box">
+      <div style="margin-bottom:6px"><strong>Random starting points</strong> — don't always begin at bar 1</div>
+      <div style="margin-bottom:6px"><strong>Hands separately</strong> — reveals hidden weaknesses</div>
+      <div style="margin-bottom:6px"><strong>Varied tempos</strong> — slow for accuracy, fast for recall</div>
+      <div style="margin-bottom:6px"><strong>Mild distraction</strong> — if it falls apart, memory isn't deep enough</div>
+      <div style="margin-bottom:6px"><strong>Active retrieval</strong> — for "automatic" pieces: mental rehearsal, harmonic analysis, start from random bars</div>
+      <div class="note">For pieces with widespread errors (nos. 16, 19): slow practice and random starts beat additional full run-throughs.</div>
+    </div>
+
+    <h3>Learning Plan</h3>
+    <div class="info-box">
+      <div>1. Finish F♯ minor (no.8)</div>
+      <div>2. Easy ones: D major (no.5), G major (no.3)</div>
+      <div>3. Hardest remaining: G♯ minor (no.12)</div>
+      <div>4. Then: C major, A minor, E minor, B minor, A major, F♯ major</div>
+    </div>
+
+    <h3>Backup & Restore</h3>
+    <div class="info-box">
+      <div style="margin-bottom:8px">Export your data regularly to protect against browser data loss.</div>
+      <button class="action-btn" onclick="exportData()" style="margin-bottom:10px">Export backup</button>
+      <div class="import-area">
+        <div style="margin-bottom:6px;font-weight:500">Restore from backup:</div>
+        <input type="file" accept=".json" onchange="if(this.files[0])importData(this.files[0])">
+      </div>
+    </div>
+
+    <button class="action-btn action-btn-grey" onclick="resetAll()">Reset all data to defaults</button>
+  </div>`;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadData();
+checkExportReminder();
+render();
+</script>
+</body>
+</html>
